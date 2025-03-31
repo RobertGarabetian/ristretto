@@ -1,0 +1,10 @@
+# Create a Dockerfile
+echo 'FROM golang:1.19-alpine
+WORKDIR /app
+COPY . .
+RUN go build -o app
+CMD ["./app"]' > Dockerfile
+
+# Build and run
+docker build -t ristretto_backend .
+docker run -p 8080:8080 -e GOOGLE_PLACES_API_KEY="your-key" ristretto_backend
