@@ -1,35 +1,32 @@
 // utils/api.ts
-import { useAuth } from '@clerk/clerk-expo';
-import * as SecureStore from 'expo-secure-store';
+const API_URL = 'http://192.168.1.72:8080';
 
-// Use environment variables or configure based on build type
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
-
-async function getAuthToken() {
-  return await SecureStore.getItemAsync('auth_token');
-}
-
-async function fetchWithAuth(endpoint: string, options: RequestInit = {}, token: string) {
-  console.log("here1")
-  
-
+async function fetchWithAuth(endpoint: string, options: RequestInit = {}, token?: string) {
+  if (!token) {
+    throw new Error('Authentication token is required');
+  }
+  console.log("optionsssss:::::",options)
   const headers = {
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    ...options.headers,
   };
   console.log(headers)
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
+  console.log("API Request:", `${API_URL}${endpoint}`);
+console.log("Headers:", JSON.stringify(headers));
+
+const response = await fetch(`${API_URL}${endpoint}`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    }
   });
-  
+  console.log("Response status:", response.status);
+console.log("(------\n\n\n", response)
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
+    console.log(errorData)
     throw new Error(errorData?.message || `Error: ${response.status}`);
   }
-  console.log("here")
-
 
   return response.json();
 }

@@ -19,7 +19,12 @@ import {
 import { useRouter, Stack } from "expo-router";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchCoffeeShops, CoffeeShop } from "@/services/coffeeShopServices";
+import {
+  fetchCoffeeShops,
+  CoffeeShop,
+  removeFromFavorites,
+  addToFavorites,
+} from "@/services/coffeeShopServices";
 import { useAuth } from "@clerk/clerk-expo";
 
 export default function CoffeeShopsScreen() {
@@ -45,8 +50,14 @@ export default function CoffeeShopsScreen() {
 
   const loadCoffeeShops = async () => {
     setLoading(true);
-    console.log(loading);
     try {
+      // Get the token properly using the getToken method
+      const token = await getToken({ template: "test" });
+
+      if (!token) {
+        throw new Error("Authentication token is missing");
+      }
+
       const shops = await fetchCoffeeShops(
         {
           lat: coordinates.lat,
@@ -57,7 +68,6 @@ export default function CoffeeShopsScreen() {
         token
       );
       setCoffeeShops(shops);
-      console.log(coffeeShops);
     } catch (err) {
       Alert.alert(
         "Error",
