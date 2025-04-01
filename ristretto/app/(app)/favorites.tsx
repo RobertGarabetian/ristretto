@@ -1,152 +1,144 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
-  StyleSheet,
   Text,
+  StyleSheet,
   FlatList,
-  RefreshControl,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
+  RefreshControl,
 } from "react-native";
+import { useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocation } from "../../lib/location";
-import { CoffeeShop, useApi } from "../../lib/api";
-import CoffeeShopCard from "../../components/CoffeeShopCard";
-import { useIsFocused } from "@react-navigation/native";
+import {
+  fetchFavorites,
+  removeFromFavorites,
+  CoffeeShop,
+} from "@/services/coffeeShopServices";
 
 export default function FavoritesScreen() {
-  const api = useApi();
-  const isFocused = useIsFocused();
-  const { location } = useLocation();
-
+  const router = useRouter();
   const [favorites, setFavorites] = useState<CoffeeShop[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch favorites when screen is focused
-  useEffect(() => {
-    if (isFocused) {
-      fetchFavorites();
-    }
-  }, [isFocused]);
-
-  // Function to fetch favorite coffee shops
-  const fetchFavorites = async () => {
-    setLoading(true);
-    setError(null);
-
+  const loadFavorites = useCallback(async () => {
     try {
-      const shops = await api.getFavorites();
-      setFavorites(shops);
-    } catch (err) {
-      console.error("Error fetching favorites:", err);
-      setError("Failed to fetch favorites. Please try again.");
+      const favoriteShops = await fetchFavorites();
+      setFavorites(favoriteShops);
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to load your favorite coffee shops. Please try again."
+      );
+      console.error("Failed to load favorites:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
-  // Handle refresh
-  const handleRefresh = () => {
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
+
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchFavorites();
-  };
+    loadFavorites();
+  }, [loadFavorites]);
 
-  // Remove from favorites
-  const removeFromFavorites = async (shop: CoffeeShop) => {
+  const handleRemoveFavorite = async (shop: CoffeeShop) => {
     try {
-      await api.removeFavorite(shop.id);
-
-      // Update local state
-      setFavorites(favorites.filter((s) => s.id !== shop.id));
-
-      Alert.alert("Success", `Removed ${shop.name} from favorites`);
-    } catch (err) {
-      console.error("Error removing favorite:", err);
+      await removeFromFavorites(shop.id);
+      // Update the state to remove this item
+      setFavorites((currentFavorites) =>
+        currentFavorites.filter((item) => item.id !== shop.id)
+      );
+    } catch (error) {
       Alert.alert("Error", "Failed to remove from favorites");
+      console.error("Remove favorite failed:", error);
     }
   };
 
-  // Mark a coffee shop as visited
-  const markAsVisited = async (shop: CoffeeShop) => {
-    try {
-      await api.addVisit(shop);
-      Alert.alert("Success", `Marked ${shop.name} as visited!`);
-    } catch (err) {
-      console.error("Error marking as visited:", err);
-      Alert.alert("Error", "Failed to mark as visited");
-    }
+  const navigateToDetail = (shop: CoffeeShop) => {
+    router.push(`/coffee-shops/${shop.id}`);
   };
 
-  // Render empty state
-  const renderEmptyComponent = () => {
-    if (loading) {
-      return (
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-        </View>
-      );
-    }
-
-    if (error) {
-      return (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color="#6b7280" />
-          <Text style={styles.emptyText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchFavorites}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    if (favorites.length === 0) {
-      return (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="heart-outline" size={48} color="#6b7280" />
-          <Text style={styles.emptyText}>No favorite coffee shops yet</Text>
-          <Text style={styles.emptySubText}>
-            Add coffee shops to your favorites to see them here
+  const renderFavoriteItem = ({ item }: { item: CoffeeShop }) => (
+    <TouchableOpacity
+      style={styles.listItem}
+      onPress={() => navigateToDetail(item)}
+    >
+      <View style={styles.shopInfo}>
+        <Text style={styles.shopName}>{item.name}</Text>
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={14} color="#6b7280" />
+          <Text style={styles.locationText}>
+            {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
           </Text>
         </View>
-      );
-    }
+      </View>
 
-    return null;
-  };
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => handleRemoveFavorite(item)}
+      >
+        <Ionicons name="heart-dislike" size={20} color="#ef4444" />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
+  const renderEmptyList = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="heart-outline" size={64} color="#9ca3af" />
+      <Text style={styles.emptyTitle}>No favorites yet</Text>
+      <Text style={styles.emptyText}>
+        Coffee shops you add to favorites will appear here
+      </Text>
+      <TouchableOpacity
+        style={styles.browseButton}
+        onPress={() => router.push("/coffee-shops")}
+      >
+        <Text style={styles.browseButtonText}>Browse Coffee Shops</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={favorites}
-        renderItem={({ item }) => (
-          <CoffeeShopCard
-            coffeeShop={item}
-            userLatitude={location?.latitude}
-            userLongitude={location?.longitude}
-            onFavoritePress={() => removeFromFavorites(item)}
-            onVisitPress={() => markAsVisited(item)}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={renderEmptyComponent}
-        ListHeaderComponent={
-          <View style={styles.headerContainer}>
-            <Text style={styles.headerTitle}>Your Favorite Coffee Shops</Text>
-            <Text style={styles.headerCount}>
-              {favorites.length} {favorites.length === 1 ? "place" : "places"}
-            </Text>
-          </View>
-        }
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: "My Favorites",
+          headerTitleStyle: styles.headerTitle,
+        }}
       />
-    </View>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={styles.loadingText}>Loading your favorites...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={favorites}
+          renderItem={renderFavoriteItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={renderEmptyList}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#3b82f6"]}
+              tintColor="#3b82f6"
+            />
+          }
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -155,54 +147,85 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  headerContainer: {
-    padding: 16,
-    paddingBottom: 8,
-  },
   headerTitle: {
-    fontSize: 18,
     fontWeight: "600",
-    color: "#111827",
   },
-  headerCount: {
-    fontSize: 14,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
     color: "#6b7280",
-    marginTop: 4,
   },
   listContent: {
-    padding: 16,
-    paddingTop: 0,
     flexGrow: 1,
+    paddingVertical: 8,
+  },
+  listItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  shopInfo: {
+    flex: 1,
+  },
+  shopName: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  locationText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: "#6b7280",
+  },
+  removeButton: {
+    padding: 8,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#e5e7eb",
+    marginHorizontal: 20,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 32,
-    minHeight: 300,
+    padding: 24,
   },
-  emptyText: {
-    fontSize: 16,
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: "600",
     color: "#4b5563",
-    textAlign: "center",
     marginTop: 16,
     marginBottom: 8,
   },
-  emptySubText: {
+  emptyText: {
     fontSize: 14,
     color: "#6b7280",
     textAlign: "center",
+    marginBottom: 24,
   },
-  retryButton: {
+  browseButton: {
     backgroundColor: "#3b82f6",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 8,
-    marginTop: 16,
   },
-  retryButtonText: {
+  browseButtonText: {
     color: "#fff",
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

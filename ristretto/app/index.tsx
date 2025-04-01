@@ -1,24 +1,21 @@
+// app/index.tsx
 import { Redirect } from "expo-router";
-import { View, ActivityIndicator } from "react-native";
-import React from "react";
+import { useEffect } from "react";
 import { useAuth } from "@clerk/clerk-expo";
 
 export default function Index() {
-  const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
 
-  // Show loading indicator while auth state is being determined
-  if (isLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
-    );
+  // If auth is still loading, you could show a splash screen here
+  if (!isLoaded) {
+    return null; // Or a splash screen component
   }
 
-  // Redirect based on authentication status
-  if (isSignedIn) {
-    return <Redirect href="/(app)/coffee-shops" />;
+  // If user is not signed in, redirect to auth flow
+  if (!isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
   }
 
-  return <Redirect href="/(auth)/sign-in" />;
+  // If user is signed in, redirect to main app flow
+  return <Redirect href="/(app)/coffee-shops" />;
 }

@@ -1,41 +1,43 @@
-import { Slot } from "expo-router";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import "react-native-reanimated";
+import { ClerkProvider } from "@clerk/clerk-expo";
+import { Slot, Stack } from "expo-router";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 
-import * as SplashScreen from "expo-splash-screen";
-import { useCallback } from "react";
-import { View } from "react-native";
-import { useFonts } from "@expo-google-fonts/inter";
-import React from "react";
-import { ClerkProvider } from "@clerk/clerk-expo";
-
-// Keep the splash screen visible while we initialize resources
+// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    InterRegular: require("../assets/fonts/Inter-Regular.ttf"),
-    InterMedium: require("../assets/fonts/Inter-Medium.ttf"),
-    InterSemiBold: require("../assets/fonts/Inter-SemiBold.ttf"),
-    InterBold: require("../assets/fonts/Inter-Bold.ttf"),
+  const colorScheme = useColorScheme();
+  const [loaded] = useFonts({
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded || fontError) {
-      await SplashScreen.hideAsync();
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [loaded]);
 
-  if (!fontsLoaded && !fontError) {
+  if (!loaded) {
     return null;
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <ClerkProvider tokenCache={tokenCache}>
-        <StatusBar style="auto" />
+    <ClerkProvider tokenCache={tokenCache}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Slot />
-      </ClerkProvider>
-    </View>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </ClerkProvider>
   );
 }

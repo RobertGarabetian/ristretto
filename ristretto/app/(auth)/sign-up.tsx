@@ -1,328 +1,112 @@
-import { useSignUp } from "@clerk/clerk-expo";
-import { Link } from "expo-router";
-import React, { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  TextInput,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Image,
-} from "react-native";
+import * as React from 'react'
+import { Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { useSignUp } from '@clerk/clerk-expo'
+import { Link, useRouter } from 'expo-router'
 
 export default function SignUpScreen() {
-  const { signUp, setActive, isLoaded } = useSignUp();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [emailAddress, setEmailAddress] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [code, setCode] = useState("");
+  const { isLoaded, signUp, setActive } = useSignUp()
+  const router = useRouter()
 
-  const handleSignUp = async () => {
-    if (!isLoaded) return;
+  const [emailAddress, setEmailAddress] = React.useState('')
+  const [password, setPassword] = React.useState('')
+  const [pendingVerification, setPendingVerification] = React.useState(false)
+  const [code, setCode] = React.useState('')
 
-    setLoading(true);
-    setError(null);
+  // Handle submission of sign-up form
+  const onSignUpPress = async () => {
+    if (!isLoaded) return
 
+    console.log(emailAddress, password)
+
+    // Start sign-up process using email and password provided
     try {
-      // Create new user
       await signUp.create({
-        firstName,
-        lastName,
         emailAddress,
         password,
-      });
+      })
 
-      // Prepare verification
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      // Send user an email with verification code
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
 
-      // Set verifying mode
-      setVerifying(true);
-    } catch (err: any) {
-      setError(
-        err.errors?.[0]?.message || "Failed to sign up. Please try again."
-      );
-      setVerifying(false);
-    } finally {
-      setLoading(false);
+      // Set 'pendingVerification' to true to display second form
+      // and capture OTP code
+      setPendingVerification(true)
+    } catch (err) {
+      // See https://clerk.com/docs/custom-flows/error-handling
+      // for more info on error handling
+      console.error(JSON.stringify(err, null, 2))
     }
-  };
+  }
 
-  const handleVerify = async () => {
-    if (!isLoaded || !code) return;
-
-    setLoading(true);
-    setError(null);
+  // Handle submission of verification form
+  const onVerifyPress = async () => {
+    if (!isLoaded) return
 
     try {
-      // Verify email
-      const completeSignUp = await signUp.attemptEmailAddressVerification({
+      // Use the code the user provided to attempt verification
+      const signUpAttempt = await signUp.attemptEmailAddressVerification({
         code,
-      });
+      })
 
-      // Set session active
-      await setActive({ session: completeSignUp.createdSessionId });
-    } catch (err: any) {
-      setError(
-        err.errors?.[0]?.message || "Failed to verify email. Please try again."
-      );
-    } finally {
-      setLoading(false);
+      // If verification was completed, set the session to active
+      // and redirect the user
+      if (signUpAttempt.status === 'complete') {
+        await setActive({ session: signUpAttempt.createdSessionId })
+        router.replace('/')
+      } else {
+        // If the status is not complete, check why. User may need to
+        // complete further steps.
+        console.error(JSON.stringify(signUpAttempt, null, 2))
+      }
+    } catch (err) {
+      // See https://clerk.com/docs/custom-flows/error-handling
+      // for more info on error handling
+      console.error(JSON.stringify(err, null, 2))
     }
-  };
+  }
+
+  if (pendingVerification) {
+    return (
+      <>
+        <Text>Verify your email</Text>
+        <TextInput
+          value={code}
+          placeholder="Enter your verification code"
+          onChangeText={(code) => setCode(code)}
+        />
+        <TouchableOpacity onPress={onVerifyPress}>
+          <Text>Verify</Text>
+        </TouchableOpacity>
+      </>
+    )
+  }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.logoContainer}>
-          <Image
-            source={require("../../assets/icon.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.appName}>Ristretto</Text>
-          <Text style={styles.tagline}>Your Coffee Shop Companion</Text>
+    <View>
+      <>
+        <Text>Sign up</Text>
+        <TextInput
+          autoCapitalize="none"
+          value={emailAddress}
+          placeholder="Enter email"
+          onChangeText={(email) => setEmailAddress(email)}
+        />
+        <TextInput
+          value={password}
+          placeholder="Enter password"
+          secureTextEntry={true}
+          onChangeText={(password) => setPassword(password)}
+        />
+        <TouchableOpacity onPress={onSignUpPress}>
+          <Text>Continue</Text>
+        </TouchableOpacity>
+        <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
+          <Text>Already have an account?</Text>
+          <Link href="/sign-in">
+            <Text>Sign in</Text>
+          </Link>
         </View>
-
-        <View style={styles.formContainer}>
-          {!verifying ? (
-            <>
-              <Text style={styles.title}>Create Account</Text>
-
-              {error && <Text style={styles.errorText}>{error}</Text>}
-
-              <View style={styles.inputRow}>
-                <View
-                  style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
-                >
-                  <Text style={styles.label}>First Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="John"
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    editable={!loading}
-                  />
-                </View>
-
-                <View
-                  style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}
-                >
-                  <Text style={styles.label}>Last Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Doe"
-                    value={lastName}
-                    onChangeText={setLastName}
-                    editable={!loading}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="your@email.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={emailAddress}
-                  onChangeText={setEmailAddress}
-                  editable={!loading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Create a password"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                  editable={!loading}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleSignUp}
-                disabled={loading || !isLoaded}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Sign Up</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.title}>Verify Email</Text>
-              <Text style={styles.instructions}>
-                We've sent a verification code to {emailAddress}. Please enter
-                the code below.
-              </Text>
-
-              {error && <Text style={styles.errorText}>{error}</Text>}
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Verification Code</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="123456"
-                  keyboardType="number-pad"
-                  value={code}
-                  onChangeText={setCode}
-                  editable={!loading}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleVerify}
-                disabled={loading || !isLoaded || !code}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Verify Email</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
-
-          <View style={styles.footerContainer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <Link href="/(auth)/sign-in" asChild>
-              <TouchableOpacity>
-                <Text style={styles.linkText}>Sign In</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+      </>
+    </View>
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    justifyContent: "center",
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 16,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#3b82f6",
-    marginBottom: 4,
-  },
-  tagline: {
-    fontSize: 16,
-    color: "#6b7280",
-  },
-  formContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  instructions: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  inputRow: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#4b5563",
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-  button: {
-    backgroundColor: "#3b82f6",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginTop: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  footerContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  footerText: {
-    fontSize: 14,
-    color: "#6b7280",
-  },
-  linkText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#3b82f6",
-  },
-  errorText: {
-    color: "#ef4444",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-});
