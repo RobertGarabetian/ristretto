@@ -65,7 +65,7 @@ func (s *PlacesService) SearchNearby(latitude, longitude, radius float64, maxRes
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Goog-Api-Key", apiKey)
-	req.Header.Set("X-Goog-FieldMask", "places.displayName,places.id,places.location,places.photos")
+	req.Header.Set("X-Goog-FieldMask", "places.displayName,places.id,places.location")
 
 	// Send request
 	client := &http.Client{}

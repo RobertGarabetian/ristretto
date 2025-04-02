@@ -6,7 +6,6 @@ type CoffeeShop struct {
 	Name       string  `json:"name"`
 	Latitude   float64 `json:"latitude"`
 	Longitude  float64 `json:"longitude"`
-	Photos     string  `json:"photos"`
 	IsFavorite bool    `json:"isFavorite,omitempty"`
 }
 

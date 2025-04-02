@@ -40,5 +40,4 @@ type Place struct {
 		Latitude  float64 `json:"latitude"`
 		Longitude float64 `json:"longitude"`
 	} `json:"location"`
-	Photos string `json:"photos"`
 }
