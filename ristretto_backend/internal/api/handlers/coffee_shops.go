@@ -118,6 +118,7 @@ func (h *CoffeeShopsHandler) HandleCoffeeShops(w http.ResponseWriter, r *http.Re
 			Latitude:   place.Location.Latitude,
 			Longitude:  place.Location.Longitude,
 			IsFavorite: favoriteIDs[place.PlaceID],
+			Photos:     place.Photos,
 		}
 		coffeeShops = append(coffeeShops, coffeeShop)
 	}

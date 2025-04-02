@@ -1,6 +1,8 @@
 package config
 
-import "os"
+import (
+	"os"
+)
 
 // Config holds all configuration for the application
 type Config struct {

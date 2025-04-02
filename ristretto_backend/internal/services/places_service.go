@@ -65,7 +65,7 @@ func (s *PlacesService) SearchNearby(latitude, longitude, radius float64, maxRes
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Goog-Api-Key", apiKey)
-	req.Header.Set("X-Goog-FieldMask", "places.displayName,places.id,places.location")
+	req.Header.Set("X-Goog-FieldMask", "places.displayName,places.id,places.location,places.photos")
 
 	// Send request
 	client := &http.Client{}
@@ -77,7 +77,6 @@ func (s *PlacesService) SearchNearby(latitude, longitude, radius float64, maxRes
 	defer resp.Body.Close()
 
 	log.Printf("Google Places API response received with status: %d", resp.StatusCode)
-
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)

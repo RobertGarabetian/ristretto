@@ -16,6 +16,7 @@ type CoffeeShop = {
   latitude: number;
   longitude: number;
   isFavorite: boolean;
+  location: string;
 };
 
 interface CoffeeShopResponse {
@@ -58,6 +59,7 @@ export default function CoffeeShopsPage() {
       }
 
       const data: CoffeeShopResponse = await response.json();
+      console.log(data);
       setCoffeeShops(data.coffeeShops || []);
     } catch (err) {
       setError(
@@ -341,6 +343,7 @@ export default function CoffeeShopsPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-900 truncate">
                             {shop.name}
+                            {shop.location}
                           </p>
                         </div>
                         <button

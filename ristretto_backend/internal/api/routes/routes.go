@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/RobertGarabetian/ristretto/ristretto_backend/internal/api/handlers"
+	"github.com/RobertGarabetian/ristretto/ristretto_backend/internal/config"
 	"github.com/RobertGarabetian/ristretto/ristretto_backend/internal/db"
 	"github.com/RobertGarabetian/ristretto/ristretto_backend/internal/services"
 )
@@ -35,5 +36,7 @@ func Register(mux *http.ServeMux, db *db.DB, authMiddleware Middleware) {
 
 // getGoogleAPIKey retrieves the Google API key from environment variables
 func getGoogleAPIKey() string {
-	return "" // Placeholder, should be loaded from environment variables
+	cfg := config.Load()
+
+	return cfg.Google.PlacesAPIKey // Placeholder, should be loaded from environment variables
 }

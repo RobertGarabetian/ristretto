@@ -37,9 +37,7 @@ export async function GET(request: Request) {
     console.log("Response headers:", Object.fromEntries(response.headers.entries()));
     
     // Read the response body ONLY ONCE
-    const rawText = await response.text();
-    console.log("Raw response:::::::::::::::::::::::::::::::::::::\n\n", rawText);
-    
+    const rawText = await response.text();    
     // Now try to parse if it's JSON
     let data;
     try {
