@@ -1,34 +1,19 @@
-// app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  MapPinIcon,
-  ArrowPathIcon,
-  HeartIcon,
-} from "@heroicons/react/24/outline";
-import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
-import { useAuth, SignInButton, UserButton } from "@clerk/nextjs";
-
-type CoffeeShop = {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  isFavorite: boolean;
-  location: string;
-};
-
-interface CoffeeShopResponse {
-  coffeeShops: CoffeeShop[];
-}
+import { useAuth } from "@clerk/nextjs";
+import Header from "@/components/Header";
+import WelcomeSection from "@/components/WelcomeSection";
+import SearchForm from "@/components/SearchForm";
+import CoffeeShopList from "@/components/CoffeeShopList";
+import type { CoffeeShop, Coordinates } from "@/types";
 
 export default function CoffeeShopsPage() {
   const { isLoaded, isSignedIn } = useAuth();
   const [coffeeShops, setCoffeeShops] = useState<CoffeeShop[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [coordinates, setCoordinates] = useState({
+  const [coordinates, setCoordinates] = useState<Coordinates>({
     lat: 37.7937,
     lng: -122.3965,
     radius: 500,
@@ -58,8 +43,7 @@ export default function CoffeeShopsPage() {
         throw new Error(`Error: ${response.status}`);
       }
 
-      const data: CoffeeShopResponse = await response.json();
-      console.log(data);
+      const data = await response.json();
       setCoffeeShops(data.coffeeShops || []);
     } catch (err) {
       setError(
@@ -143,17 +127,8 @@ export default function CoffeeShopsPage() {
     }
   }, [isLoaded, isSignedIn]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchCoffeeShops();
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCoordinates({
-      ...coordinates,
-      [name]: parseFloat(value),
-    });
+  const handleCoordinatesChange = (newCoordinates: Coordinates) => {
+    setCoordinates(newCoordinates);
   };
 
   if (!isLoaded) {
@@ -166,146 +141,21 @@ export default function CoffeeShopsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-900">
-            Coffee Shop Finder
-          </h1>
-          {isSignedIn ? (
-            <UserButton afterSignOutUrl="/" />
-          ) : (
-            <SignInButton mode="modal">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                Sign In
-              </button>
-            </SignInButton>
-          )}
-        </div>
-      </header>
+      <Header isSignedIn={isSignedIn} />
 
       <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
         {!isSignedIn ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">
-              Welcome to Coffee Shop Finder
-            </h2>
-            <p className="mb-6 text-gray-600">
-              Sign in to discover coffee shops near you.
-            </p>
-            <SignInButton mode="modal">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
-                Sign In to Continue
-              </button>
-            </SignInButton>
-          </div>
+          <WelcomeSection />
         ) : (
           <>
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-8">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="lat"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Latitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      id="lat"
-                      name="lat"
-                      value={coordinates.lat}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="lng"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Longitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      id="lng"
-                      name="lng"
-                      value={coordinates.lng}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="radius"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Radius (meters)
-                    </label>
-                    <input
-                      type="number"
-                      id="radius"
-                      name="radius"
-                      value={coordinates.radius}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="max"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Max Results
-                    </label>
-                    <input
-                      type="number"
-                      id="max"
-                      name="max"
-                      value={coordinates.max}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex space-x-4">
-                  <button
-                    type="button"
-                    onClick={getUserLocation}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={userLocation}
-                  >
-                    {userLocation ? (
-                      <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
-                    ) : (
-                      <MapPinIcon className="h-5 w-5 mr-2" />
-                    )}
-                    Use My Location
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
-                        Searching...
-                      </>
-                    ) : (
-                      "Search Coffee Shops"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
+            <SearchForm
+              coordinates={coordinates}
+              onCoordinatesChange={handleCoordinatesChange}
+              onSubmit={fetchCoffeeShops}
+              getUserLocation={getUserLocation}
+              userLocation={userLocation}
+              loading={loading}
+            />
 
             {error && (
               <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
@@ -317,57 +167,12 @@ export default function CoffeeShopsPage() {
               </div>
             )}
 
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-4 py-5 sm:px-6">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Coffee Shops Near You
-                </h2>
-                <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                  Showing {coffeeShops.length} results within{" "}
-                  {coordinates.radius}m
-                </p>
-              </div>
-
-              {loading ? (
-                <div className="flex justify-center items-center p-12">
-                  <ArrowPathIcon className="h-8 w-8 text-blue-500 animate-spin" />
-                </div>
-              ) : coffeeShops.length > 0 ? (
-                <ul className="divide-y divide-gray-200">
-                  {coffeeShops.map((shop) => (
-                    <li
-                      key={shop.id}
-                      className="px-4 py-4 sm:px-6 hover:bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {shop.name}
-                            {shop.location}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => toggleFavorite(shop)}
-                          className="ml-4 flex-shrink-0 p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {shop.isFavorite ? (
-                            <HeartSolidIcon className="h-6 w-6 text-red-500" />
-                          ) : (
-                            <HeartIcon className="h-6 w-6 text-gray-400" />
-                          )}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">
-                    No coffee shops found in this area.
-                  </p>
-                </div>
-              )}
-            </div>
+            <CoffeeShopList
+              coffeeShops={coffeeShops}
+              loading={loading}
+              radius={coordinates.radius}
+              onToggleFavorite={toggleFavorite}
+            />
           </>
         )}
       </main>
