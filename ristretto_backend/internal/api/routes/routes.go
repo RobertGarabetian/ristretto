@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/RobertGarabetian/ristretto/ristretto_backend/internal/api/handlers"
 	"github.com/RobertGarabetian/ristretto/ristretto_backend/internal/config"
@@ -19,7 +20,22 @@ func Register(mux *http.ServeMux, db *db.DB, authMiddleware Middleware) {
 
 	// Coffee Shops routes
 	coffeeShopsHandler := handlers.NewCoffeeShopsHandler(db, placesService)
-	mux.HandleFunc("/coffee_shops", authMiddleware(db, coffeeShopsHandler.HandleCoffeeShops))
+	coffeeShopDetailsHandler := handlers.NewCoffeeShopDetailsHandler(db, placesService)
+
+	// Handle /coffee_shops/{placeId} and /coffee_shops
+	mux.HandleFunc("/coffee_shops/", func(w http.ResponseWriter, r *http.Request) {
+		// Extract path after /coffee_shops/
+		path := strings.TrimPrefix(r.URL.Path, "/coffee_shops/")
+
+		// If there's a placeId in the path, route to the details handler
+		if path != "" {
+			authMiddleware(db, coffeeShopDetailsHandler.HandleCoffeeShopDetails)(w, r)
+			return
+		}
+
+		// Otherwise, route to the list handler
+		authMiddleware(db, coffeeShopsHandler.HandleCoffeeShops)(w, r)
+	})
 
 	// User routes
 	userHandler := handlers.NewUserHandler(db)

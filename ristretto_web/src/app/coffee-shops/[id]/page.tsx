@@ -9,17 +9,18 @@ import {
   PhoneIcon,
   GlobeAltIcon,
   StarIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@clerk/nextjs";
-import type { CoffeeShop } from "@/types";
+import type { CoffeeShopDetails } from "@/types";
 import Header from "@/components/Header";
 
 export default function CoffeeShopDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
-  const [coffeeShop, setCoffeeShop] = useState<CoffeeShop | null>(null);
+  const [coffeeShop, setCoffeeShop] = useState<CoffeeShopDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,8 +34,7 @@ export default function CoffeeShopDetailPage() {
       setError(null);
 
       try {
-        // This would typically be a call to your API to get coffee shop details
-        // For now we'll mock a fetch with a timeout
+        // Call our API proxy which connects to the backend
         const response = await fetch(`/api/proxy/coffee_shops/${shopId}`);
 
         if (!response.ok) {
@@ -164,10 +164,6 @@ export default function CoffeeShopDetailPage() {
                 )}
               </div>
 
-              {coffeeShop.location && (
-                <p className="text-gray-600 mt-1">{coffeeShop.location}</p>
-              )}
-
               <div className="mt-6 space-y-4">
                 {/* Address */}
                 {coffeeShop.address && (
@@ -219,14 +215,24 @@ export default function CoffeeShopDetailPage() {
                   </div>
                 )}
 
+                {/* Price Level */}
+                {coffeeShop.priceLevel !== undefined && (
+                  <div className="flex items-center">
+                    <span className="text-sm text-gray-600">
+                      Price: {"$".repeat(coffeeShop.priceLevel)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Hours */}
                 {coffeeShop.openingHours &&
                   coffeeShop.openingHours.length > 0 && (
                     <div className="mt-6">
-                      <h3 className="text-sm font-medium text-gray-900 mb-2">
+                      <h3 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                        <ClockIcon className="h-5 w-5 text-gray-400 mr-2" />
                         Opening Hours
                       </h3>
-                      <ul className="space-y-1">
+                      <ul className="space-y-1 ml-7">
                         {coffeeShop.openingHours.map((hours, index) => (
                           <li key={index} className="text-sm text-gray-600">
                             {hours}
@@ -237,10 +243,17 @@ export default function CoffeeShopDetailPage() {
                   )}
               </div>
 
-              {/* Map View (placeholder) */}
-              <div className="mt-8 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">Map View</p>
-                {/* In a real implementation, you would add a map here using coordinates */}
+              {/* Map View */}
+              <div className="mt-8 h-64 bg-gray-200 rounded-lg">
+                <iframe
+                  title="Google Maps"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0, borderRadius: "0.5rem" }}
+                  src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_KEY&q=${coffeeShop.latitude},${coffeeShop.longitude}`}
+                  allowFullScreen
+                ></iframe>
               </div>
             </div>
           </div>
