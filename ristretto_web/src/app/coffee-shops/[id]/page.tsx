@@ -143,8 +143,8 @@ export default function CoffeeShopDetailPage() {
                   alt={coffeeShop.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.src =
-                      "/placeholder.svg?height=400&width=800";
+                    console.log(e);
+                    e.currentTarget.src = "/vercel.svg?height=400&width=800";
                   }}
                 />
               ) : (

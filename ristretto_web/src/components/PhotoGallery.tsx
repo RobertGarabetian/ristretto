@@ -81,7 +81,8 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ photos }) => {
                 alt={`Coffee shop photo ${index + 1}`}
                 className="object-cover w-full h-full hover:opacity-90 transition-opacity"
                 onError={(e) => {
-                  e.currentTarget.src = "/placeholder.svg?height=300&width=300";
+                  console.log(e);
+                  e.currentTarget.src = "/vercel.svg?height=300&width=300";
                 }}
               />
             </div>
@@ -122,7 +123,8 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ photos }) => {
               alt={`Coffee shop photo ${currentPhotoIndex + 1}`}
               className="max-h-full max-w-full object-contain"
               onError={(e) => {
-                e.currentTarget.src = "/placeholder.svg?height=600&width=800";
+                console.log(e);
+                e.currentTarget.src = "";
               }}
             />
           </div>
