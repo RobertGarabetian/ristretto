@@ -136,17 +136,6 @@ export default function CoffeeShopDetailPage() {
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {/* Hero Section */}
             <div className="relative h-48 bg-gray-300">
-              {coffeeShop.photos && coffeeShop.photos.length > 0 ? (
-                <img
-                  src={coffeeShop.photos[0] || "/placeholder.svg"}
-                  alt={coffeeShop.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                  <p className="text-gray-500">No image available</p>
-                </div>
-              )}
               <button
                 onClick={toggleFavorite}
                 className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
