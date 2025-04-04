@@ -4,12 +4,16 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  {
+    params,
+  }: {
+    params: Promise<{ id: string }>
+  }
 ) {
   // Get the place ID from the route parameters
-  const placeId = params.id;
-
-  if (!placeId) {
+  // const placeId = params.id;
+  const { id } = await params
+  if (!id) {
     return NextResponse.json(
       { error: "Coffee shop ID is required" },
       { status: 400 }
@@ -32,7 +36,7 @@ export async function GET(
 
     // Make request to your Go backend
     const backendUrl = process.env.BACKEND_URL || "http://localhost:8080";
-    const response = await fetch(`${backendUrl}/coffee_shops/${placeId}`, {
+    const response = await fetch(`${backendUrl}/coffee_shops/${id}`, {
       headers: {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"

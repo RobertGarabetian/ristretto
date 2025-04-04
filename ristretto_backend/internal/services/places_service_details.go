@@ -50,14 +50,44 @@ func (s *PlacesService) GetPlaceDetails(placeID string) (*models.PlaceDetails, e
 		return nil, fmt.Errorf("Google Places API error: %s", string(bodyBytes))
 	}
 
-	// Parse response
-	var placeDetails models.PlaceDetails
-	if err := json.NewDecoder(resp.Body).Decode(&placeDetails); err != nil {
+	// Read the full response body for debugging
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Log the response for debugging
+	log.Printf("Google Places API response: %s", string(bodyBytes))
+
+	// Initialize struct with default values
+	placeDetails := &models.PlaceDetails{
+		PlaceID: placeID,
+		DisplayName: models.DisplayName{
+			Text: "Unknown Place",
+		},
+		Location: models.Location{
+			Latitude:  0,
+			Longitude: 0,
+		},
+	}
+
+	// Parse the response
+	if err := json.Unmarshal(bodyBytes, placeDetails); err != nil {
 		log.Printf("Response parsing error: %v", err)
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
+	// Validate required fields
+	if placeDetails.PlaceID == "" {
+		placeDetails.PlaceID = placeID
+	}
+
+	if placeDetails.DisplayName.Text == "" {
+		placeDetails.DisplayName.Text = "Unknown Place"
+	}
+
 	log.Printf("Successfully parsed Google Places API details response for: %s", placeDetails.DisplayName.Text)
 
-	return &placeDetails, nil
+	return placeDetails, nil
 }

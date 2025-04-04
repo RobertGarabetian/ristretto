@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -78,16 +77,33 @@ func (h *CoffeeShopDetailsHandler) HandleCoffeeShopDetails(w http.ResponseWriter
 
 	// Check if this coffee shop is in the user's favorites
 	favoriteIDs, err := h.db.GetUserFavorites(userID)
-	fmt.Print(":::::::::::::::::::::::::::::\n")
 	if err != nil {
 		log.Printf("Error fetching user favorites: %v", err)
 		// Continue without favorites rather than failing
 		favoriteIDs = make(map[string]bool)
 	}
-	fmt.Print(placeDetails)
-	/* CLAUDE I THINK I AM HAVING AN ISSUE RIGHT HERE WHEN I TRY TO CONVERT
-	THE PLACEDETAILS TO COFFEESHOPDETAILS. */
-	// Convert PlaceDetails to CoffeeShopDetails
+
+	// Debug output
+	log.Printf("Place details received: %+v", placeDetails)
+
+	// Handle potentially nil values safely
+	var openingHours []string
+	if placeDetails.CurrentOpeningHours != nil {
+		openingHours = formatOpeningHours(placeDetails.CurrentOpeningHours)
+	}
+
+	var photos []string
+	if placeDetails.Photos != nil && len(placeDetails.Photos) > 0 {
+		photos = formatPhotos(placeDetails.Photos)
+	}
+
+	// Transform photo names into actual URLs
+	photoURLs := h.placesService.TransformPhotoURLs(photos, services.PhotoSize{
+		MaxWidthPx:  400,
+		MaxHeightPx: 300,
+	})
+
+	// Convert PlaceDetails to CoffeeShopDetails with null checks
 	coffeeShopDetails := models.CoffeeShopDetails{
 		ID:           placeDetails.PlaceID,
 		Name:         placeDetails.DisplayName.Text,
@@ -96,12 +112,12 @@ func (h *CoffeeShopDetailsHandler) HandleCoffeeShopDetails(w http.ResponseWriter
 		Address:      placeDetails.FormattedAddress,
 		PhoneNumber:  placeDetails.InternationalPhoneNumber,
 		Website:      placeDetails.WebsiteURI,
+		Rating:       placeDetails.Rating,
+		PriceLevel:   placeDetails.PriceLevel,
 		IsFavorite:   favoriteIDs[placeID],
-		OpeningHours: formatOpeningHours(placeDetails.CurrentOpeningHours),
-		Photos:       formatPhotos(placeDetails.Photos),
+		OpeningHours: openingHours,
+		Photos:       photoURLs,
 	}
-
-	fmt.Print("----------------------------\n\n")
 
 	// Prepare our response
 	response := models.CoffeeShopDetailsResponse{
@@ -115,6 +131,8 @@ func (h *CoffeeShopDetailsHandler) HandleCoffeeShopDetails(w http.ResponseWriter
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("ERROR: Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -135,12 +153,27 @@ func formatOpeningHours(openingHours *models.OpeningHours) []string {
 
 		found := false
 		for _, period := range openingHours.Periods {
+			if period == nil || period.Open == nil {
+				continue
+			}
+
 			if period.Open.Day == dayIndex {
 				close := "24:00"
-				if period.Close != nil {
-					close = period.Close.Time[:2] + ":" + period.Close.Time[2:]
+				if period.Close != nil && period.Close.Time != "" {
+					// Safely handle time formatting
+					if len(period.Close.Time) >= 4 {
+						close = period.Close.Time[:2] + ":" + period.Close.Time[2:]
+					} else {
+						close = period.Close.Time // Use as-is if not in expected format
+					}
 				}
-				open := period.Open.Time[:2] + ":" + period.Open.Time[2:]
+
+				// Safely handle time formatting
+				open := period.Open.Time
+				if len(period.Open.Time) >= 4 {
+					open = period.Open.Time[:2] + ":" + period.Open.Time[2:]
+				}
+
 				formattedHours = append(formattedHours, day+": "+open+" - "+close)
 				found = true
 				break
@@ -157,13 +190,13 @@ func formatOpeningHours(openingHours *models.OpeningHours) []string {
 
 // formatPhotos converts Google Places API photos to our format
 func formatPhotos(photos []*models.Photo) []string {
-	if len(photos) == 0 {
+	if photos == nil || len(photos) == 0 {
 		return nil
 	}
 
 	photoUrls := make([]string, 0, len(photos))
 	for _, photo := range photos {
-		if photo.Name != "" {
+		if photo != nil && photo.Name != "" {
 			// We don't actually construct URLs here since we'd need to make additional API calls
 			// In a real implementation, you might want to use the Places Photos API
 			// For now, we'll just store the photo reference which the frontend can use
@@ -197,7 +230,10 @@ func createMockCoffeeShopDetails(placeID string) models.CoffeeShopDetailsRespons
 				"Saturday: 8:00 - 20:00",
 				"Sunday: 8:00 - 18:00",
 			},
-			Photos: []string{"/placeholder.svg?height=400&width=800"},
+			Photos: []string{
+				"https://places.googleapis.com/v1/places/mock_1/photos/1/media?key=mock_key&maxWidthPx=400&maxHeightPx=300",
+				"https://places.googleapis.com/v1/places/mock_1/photos/2/media?key=mock_key&maxWidthPx=400&maxHeightPx=300",
+			},
 		},
 	}
 }

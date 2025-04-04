@@ -15,6 +15,7 @@ import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@clerk/nextjs";
 import type { CoffeeShopDetails } from "@/types";
 import Header from "@/components/Header";
+import PhotoGallery from "@/components/PhotoGallery";
 
 export default function CoffeeShopDetailPage() {
   const params = useParams();
@@ -134,8 +135,23 @@ export default function CoffeeShopDetailPage() {
           </div>
         ) : coffeeShop ? (
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            {/* Hero Section */}
-            <div className="relative h-48 bg-gray-300">
+            {/* Hero Section - Display first photo if available */}
+            <div className="relative h-64 bg-gray-300">
+              {coffeeShop.photos && coffeeShop.photos.length > 0 ? (
+                <img
+                  src={coffeeShop.photos[0]}
+                  alt={coffeeShop.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "/placeholder.svg?height=400&width=800";
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <p className="text-gray-500">No photo available</p>
+                </div>
+              )}
               <button
                 onClick={toggleFavorite}
                 className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
@@ -156,7 +172,7 @@ export default function CoffeeShopDetailPage() {
                 </h1>
                 {coffeeShop.rating && (
                   <div className="flex items-center bg-blue-50 px-3 py-1 rounded-full">
-                    <StarIcon className="h-4 w-4 text-yellow-400 fill-current" />
+                    <StarIcon className="h-4 w-4 text-yellow-400" />
                     <span className="ml-1 text-sm font-medium">
                       {coffeeShop.rating}
                     </span>
@@ -243,6 +259,11 @@ export default function CoffeeShopDetailPage() {
                   )}
               </div>
 
+              {/* Photo Gallery */}
+              {coffeeShop.photos && coffeeShop.photos.length > 0 && (
+                <PhotoGallery photos={coffeeShop.photos} />
+              )}
+
               {/* Map View */}
               <div className="mt-8 h-64 bg-gray-200 rounded-lg">
                 <iframe
@@ -251,7 +272,10 @@ export default function CoffeeShopDetailPage() {
                   height="100%"
                   frameBorder="0"
                   style={{ border: 0, borderRadius: "0.5rem" }}
-                  src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_KEY&q=${coffeeShop.latitude},${coffeeShop.longitude}`}
+                  src={`https://www.google.com/maps/embed/v1/place?key=${
+                    process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ||
+                    "YOUR_GOOGLE_MAPS_KEY"
+                  }&q=${coffeeShop.latitude},${coffeeShop.longitude}`}
                   allowFullScreen
                 ></iframe>
               </div>

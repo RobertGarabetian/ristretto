@@ -30,6 +30,8 @@ type PlaceDetails struct {
 	GoogleMapsURI            string        `json:"googleMapsUri,omitempty"`
 	WebsiteURI               string        `json:"websiteUri,omitempty"`
 	InternationalPhoneNumber string        `json:"internationalPhoneNumber,omitempty"`
+	Rating                   float64       `json:"rating,omitempty"`
+	PriceLevel               int           `json:"priceLevel,omitempty"`
 	CurrentOpeningHours      *OpeningHours `json:"currentOpeningHours,omitempty"`
 	Photos                   []*Photo      `json:"photos,omitempty"`
 }
@@ -40,12 +42,15 @@ type OpeningHours struct {
 	Periods []*HoursPeriod `json:"periods"`
 }
 
+// DisplayName holds the display name text for a place
 type DisplayName struct {
-	Text string
+	Text string `json:"text"`
 }
+
+// Location represents geographical coordinates
 type Location struct {
-	Latitude  float64
-	Longitude float64
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 // HoursPeriod represents a period of opening hours
