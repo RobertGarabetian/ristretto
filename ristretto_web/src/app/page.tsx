@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Header from "@/components/Header";
 import WelcomeSection from "@/components/WelcomeSection";
-import SearchForm from "@/components/SearchForm";
+// import SearchForm from "@/components/SearchForm";
 import CoffeeShopList from "@/components/CoffeeShopList";
 import type { CoffeeShop, Coordinates } from "@/types";
 
@@ -19,7 +19,7 @@ export default function CoffeeShopsPage() {
     radius: 500,
     max: 10,
   });
-  const [userLocation, setUserLocation] = useState<boolean>(false);
+  // const [userLocation, setUserLocation] = useState<boolean>(false);
 
   const fetchCoffeeShops = async () => {
     if (!isSignedIn) return;
@@ -98,28 +98,28 @@ export default function CoffeeShopsPage() {
     }
   };
 
-  const getUserLocation = () => {
-    if ("geolocation" in navigator) {
-      setUserLocation(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCoordinates({
-            ...coordinates,
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-          setUserLocation(false);
-        },
-        (error) => {
-          setError("Unable to retrieve your location");
-          setUserLocation(false);
-          console.error(error);
-        }
-      );
-    } else {
-      setError("Geolocation is not supported by your browser");
-    }
-  };
+  // const getUserLocation = () => {
+  //   if ("geolocation" in navigator) {
+  //     setUserLocation(true);
+  //     navigator.geolocation.getCurrentPosition(
+  //       (position) => {
+  //         setCoordinates({
+  //           ...coordinates,
+  //           lat: position.coords.latitude,
+  //           lng: position.coords.longitude,
+  //         });
+  //         setUserLocation(false);
+  //       },
+  //       (error) => {
+  //         setError("Unable to retrieve your location");
+  //         setUserLocation(false);
+  //         console.error(error);
+  //       }
+  //     );
+  //   } else {
+  //     setError("Geolocation is not supported by your browser");
+  //   }
+  // };
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -127,9 +127,9 @@ export default function CoffeeShopsPage() {
     }
   }, [isLoaded, isSignedIn]);
 
-  const handleCoordinatesChange = (newCoordinates: Coordinates) => {
-    setCoordinates(newCoordinates);
-  };
+  // const handleCoordinatesChange = (newCoordinates: Coordinates) => {
+  //   setCoordinates(newCoordinates);
+  // };
 
   if (!isLoaded) {
     return (
@@ -143,20 +143,11 @@ export default function CoffeeShopsPage() {
     <div className="min-h-screen bg-gray-50">
       <Header isSignedIn={isSignedIn} />
 
-      <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         {!isSignedIn ? (
           <WelcomeSection />
         ) : (
           <>
-            <SearchForm
-              coordinates={coordinates}
-              onCoordinatesChange={handleCoordinatesChange}
-              onSubmit={fetchCoffeeShops}
-              getUserLocation={getUserLocation}
-              userLocation={userLocation}
-              loading={loading}
-            />
-
             {error && (
               <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
                 <div className="flex">

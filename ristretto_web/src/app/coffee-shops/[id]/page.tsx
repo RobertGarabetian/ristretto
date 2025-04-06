@@ -16,6 +16,7 @@ import { useAuth } from "@clerk/nextjs";
 import type { CoffeeShopDetails } from "@/types";
 import Header from "@/components/Header";
 import PhotoGallery from "@/components/PhotoGallery";
+import Image from "next/image";
 
 export default function CoffeeShopDetailPage() {
   const params = useParams();
@@ -138,7 +139,7 @@ export default function CoffeeShopDetailPage() {
             {/* Hero Section - Display first photo if available */}
             <div className="relative h-64 bg-gray-300">
               {coffeeShop.photos && coffeeShop.photos.length > 0 ? (
-                <img
+                <Image
                   src={coffeeShop.photos[0]}
                   alt={coffeeShop.name}
                   className="w-full h-full object-cover"
@@ -146,6 +147,8 @@ export default function CoffeeShopDetailPage() {
                     console.log(e);
                     e.currentTarget.src = "/vercel.svg?height=400&width=800";
                   }}
+                  width={500}
+                  height={500}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
